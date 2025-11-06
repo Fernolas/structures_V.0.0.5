@@ -1,0 +1,185 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Estrutura do produto
+typedef struct Produto {
+    int codigo;
+    char nome[50];
+    float preco;
+    int estoque;
+} Produto;
+
+// ---------------- ÁRVORE POR PREÇO ----------------
+typedef struct NoPreco {
+    Produto produto;
+    struct NoPreco *esq;
+    struct NoPreco *dir;
+} NoPreco;
+
+NoPreco* criarNoPreco(int codigo, char nome[], float preco, int estoque) {
+    NoPreco* novo = (NoPreco*) malloc(sizeof(NoPreco));
+    novo->produto.codigo = codigo;
+    strcpy(novo->produto.nome, nome);
+    novo->produto.preco = preco;
+    novo->produto.estoque = estoque;
+    novo->esq = novo->dir = NULL;
+    return novo;
+}
+
+NoPreco* inserirPorPreco(NoPreco* raiz, int codigo, char nome[], float preco, int estoque) {
+    if (raiz == NULL) return criarNoPreco(codigo, nome, preco, estoque);
+    if (preco < raiz->produto.preco)
+        raiz->esq = inserirPorPreco(raiz->esq, codigo, nome, preco, estoque);
+    else
+        raiz->dir = inserirPorPreco(raiz->dir, codigo, nome, preco, estoque);
+    return raiz;
+}
+
+NoPreco* buscarPorPreco(NoPreco* raiz, float preco) {
+    if (raiz == NULL || raiz->produto.preco == preco) return raiz;
+    if (preco < raiz->produto.preco)
+        return buscarPorPreco(raiz->esq, preco);
+    else
+        return buscarPorPreco(raiz->dir, preco);
+}
+
+// ---------------- ÁRVORE POR CÓDIGO ----------------
+typedef struct NoCodigo {
+    Produto produto;
+    struct NoCodigo *esq;
+    struct NoCodigo *dir;
+} NoCodigo;
+
+NoCodigo* criarNoCodigo(int codigo, char nome[], float preco, int estoque) {
+    NoCodigo* novo = (NoCodigo*) malloc(sizeof(NoCodigo));
+    novo->produto.codigo = codigo;
+    strcpy(novo->produto.nome, nome);
+    novo->produto.preco = preco;
+    novo->produto.estoque = estoque;
+    novo->esq = novo->dir = NULL;
+    return novo;
+}
+
+NoCodigo* inserirPorCodigo(NoCodigo* raiz, int codigo, char nome[], float preco, int estoque) {
+    if (raiz == NULL) return criarNoCodigo(codigo, nome, preco, estoque);
+    if (codigo < raiz->produto.codigo)
+        raiz->esq = inserirPorCodigo(raiz->esq, codigo, nome, preco, estoque);
+    else
+        raiz->dir = inserirPorCodigo(raiz->dir, codigo, nome, preco, estoque);
+    return raiz;
+}
+
+NoCodigo* buscarPorCodigo(NoCodigo* raiz, int codigo) {
+    if (raiz == NULL || raiz->produto.codigo == codigo) return raiz;
+    if (codigo < raiz->produto.codigo)
+        return buscarPorCodigo(raiz->esq, codigo);
+    else
+        return buscarPorCodigo(raiz->dir, codigo);
+}
+
+// ---------------- ÁRVORE POR NOME (CARRINHO) ----------------
+typedef struct NoNome {
+    Produto produto;
+    struct NoNome *esq;
+    struct NoNome *dir;
+} NoNome;
+
+NoNome* criarNoNome(int codigo, char nome[], float preco, int estoque) {
+    NoNome* novo = (NoNome*) malloc(sizeof(NoNome));
+    novo->produto.codigo = codigo;
+    strcpy(novo->produto.nome, nome);
+    novo->produto.preco = preco;
+    novo->produto.estoque = estoque;
+    novo->esq = novo->dir = NULL;
+    return novo;
+}
+
+NoNome* inserirPorNome(NoNome* raiz, int codigo, char nome[], float preco, int estoque) {
+    if (raiz == NULL) return criarNoNome(codigo, nome, preco, estoque);
+    if (strcmp(nome, raiz->produto.nome) < 0)
+        raiz->esq = inserirPorNome(raiz->esq, codigo, nome, preco, estoque);
+    else
+        raiz->dir = inserirPorNome(raiz->dir, codigo, nome, preco, estoque);
+    return raiz;
+}
+
+NoNome* buscarPorNome(NoNome* raiz, char nome[]) {
+    if (raiz == NULL || strcmp(raiz->produto.nome, nome) == 0) return raiz;
+    if (strcmp(nome, raiz->produto.nome) < 0)
+        return buscarPorNome(raiz->esq, nome);
+    else
+        return buscarPorNome(raiz->dir, nome);
+}
+              
+// Função para ler o arquivo e inserir os produtos nas árvores
+void carregarProdutos(const char *nomeArquivo, NoPreco **raizPreco, NoCodigo **raizCodigo, NoNome **raizNome) {
+    FILE *arquivo = fopen(nomeArquivo, "r");
+    if (!arquivo) {
+        printf("Erro ao abrir o arquivo %s\n", nomeArquivo);
+        exit(1);
+    }
+
+    int codigo, estoque;
+    float preco;
+    char nome[50];
+    char linha[200];
+
+    while (fgets(linha, sizeof(linha), arquivo)) {
+        if (sscanf(linha, "%d;%49[^;];%f;%d", &codigo, nome, &preco, &estoque) == 4) {
+            *raizPreco = inserirPorPreco(*raizPreco, codigo, nome, preco, estoque);
+            *raizCodigo = inserirPorCodigo(*raizCodigo, codigo, nome, preco, estoque);
+            *raizNome = inserirPorNome(*raizNome, codigo, nome, preco, estoque);
+        }
+    }
+
+    fclose(arquivo);
+    printf("Produtos carregados com sucesso!\n");
+}
+
+// Exemplo de função para testar as buscas
+void testarBuscas(NoCodigo *raizCodigo, NoPreco *raizPreco, NoNome *raizNome) {
+    int codigo;
+    float preco;
+    char nome[50];
+
+    printf("\n=== Teste de Busca ===\n");
+    printf("Digite um código para buscar: ");
+    scanf("%d", &codigo);
+    NoCodigo *c = buscarPorCodigo(raizCodigo, codigo);
+    if (c)
+        printf("Encontrado: %s - R$%.2f - Estoque: %d\n", c->produto.nome, c->produto.preco, c->produto.estoque);
+    else
+        printf("Produto não encontrado por código.\n");
+
+    printf("\nDigite um preço para buscar: ");
+    scanf("%f", &preco);
+    NoPreco *p = buscarPorPreco(raizPreco, preco);
+    if (p)
+        printf("Encontrado: %s - Código: %d - Estoque: %d\n", p->produto.nome, p->produto.codigo, p->produto.estoque);
+    else
+        printf("Produto não encontrado por preço.\n");
+
+    printf("\nDigite um nome para buscar: ");
+    scanf(" %[^\n]", nome);
+    NoNome *n = buscarPorNome(raizNome, nome);
+    if (n)
+        printf("Encontrado: Código %d - R$%.2f - Estoque: %d\n", n->produto.codigo, n->produto.preco, n->produto.estoque);
+    else
+        printf("Produto não encontrado por nome.\n");
+}
+
+int main() {
+    NoPreco *raizPreco = NULL;
+    NoCodigo *raizCodigo = NULL;
+    NoNome *raizNome = NULL;
+
+    // Carrega produtos do arquivo
+    carregarProdutos("produtos.txt", &raizPreco, &raizCodigo, &raizNome);
+
+    // Testa as buscas
+    testarBuscas(raizCodigo, raizPreco, raizNome);
+
+    return 0;
+}
+		
