@@ -137,7 +137,7 @@ void carregarProdutos(const char *nomeArquivo, NoPreco **raizPreco, NoCodigo **r
     printf("Produtos carregados com sucesso!\n");
 }
 
-// Exemplo de função para testar as buscas
+// Exemplo de função para simular as buscas
 void testarBuscas(NoCodigo *raizCodigo, NoPreco *raizPreco, NoNome *raizNome) {
     int codigo;
     float preco;
